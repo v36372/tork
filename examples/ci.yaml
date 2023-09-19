@@ -1,0 +1,27 @@
+name: Example CI Job
+inputs:
+  repo: https://github.com/runabol/tork.git
+tasks:
+  - name: generate a random bucket name to store the results
+    var: packages
+    image: golang:1.21
+    env:
+      REPO: "{{ inputs.repo }}"
+    run: |
+      git clone $REPO
+      cd tork
+      go list ./... > $TORK_OUTPUT
+
+  - name: run tests in parallel
+    each:
+      list: '{{ split(tasks.packages,"\n") }}'
+      task:
+        name: "run tests in {{ item.value }}"
+        image: golang:1.21
+        env:
+          REPO: "{{ inputs.repo }}"
+          PACKAGE: "{{ item.value }}"
+        run: |
+          git clone $REPO
+          cd tork
+          go test $PACKAGE
